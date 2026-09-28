@@ -1,12 +1,11 @@
+import random
+
 class VacuumEnvironment:
     def __init__(self):
-        # Initializing locations A and B randomly with dirty (1) or clean (0) status
-        import random
         self.locations = {
             'A': random.choice([0, 1]),
             'B': random.choice([0, 1])
         }
-        # Start the vacuum at a random location
         self.vacuum_location = random.choice(['A', 'B'])
 
     def display_status(self):
@@ -16,39 +15,45 @@ class VacuumEnvironment:
     def is_completely_clean(self):
         return self.locations['A'] == 0 and self.locations['B'] == 0
 
-
-def reflex_vacuum_agent(location, status):
+def reflex_vacuum_agent(location, status, env):
     """
-    Determines the next action based on the current location and its status.
+    Determines the next action to ensure Location A is cleaned first,
+    then Location B.
     """
-    if status == 1:  # 1 means Dirty
+    if status == 1:
         return 'Suck'
-    elif location == 'A':
-        return 'Right'
-    elif location == 'B':
+    
+    if env.locations['A'] == 1 and location != 'A':
         return 'Left'
+    
+    if env.locations['A'] == 0 and env.locations['B'] == 1 and location != 'B':
+        return 'Right'
 
+    return 'NoOp'
 
 def run_simulation():
-    # Setup the environment
     env = VacuumEnvironment()
-    print("--- Starting Vacuum Cleaner Simulation ---")
+    print("--- Starting Sequential Vacuum Cleaner Simulation (A then B) ---")
     env.display_status()
     
     steps = 0
-    # Run the vacuum until both locations are clean
+    
+    if env.is_completely_clean():
+        print("Initial State: Both locations are already clean!")
+        return
+
+
     while not env.is_completely_clean() and steps < 10:
         steps += 1
         current_loc = env.vacuum_location
         current_status = env.locations[current_loc]
         
-        # Agent decides the action based on current percepts
-        action = reflex_vacuum_agent(current_loc, current_status)
+        action = reflex_vacuum_agent(current_loc, current_status, env)
+        
         print(f"[Step {steps}] Perceived: ({current_loc}, {'Dirty' if current_status else 'Clean'}) -> Action: {action}")
         
-        # Execute the action inside the environment
         if action == 'Suck':
-            env.locations[current_loc] = 0  # Clean the location
+            env.locations[current_loc] = 0
             print(f"-> Successfully cleaned Location {current_loc}.")
         elif action == 'Right':
             env.vacuum_location = 'B'
@@ -56,10 +61,16 @@ def run_simulation():
         elif action == 'Left':
             env.vacuum_location = 'A'
             print("-> Moved to Location A.")
-        
+        elif action == 'NoOp':
+            print("-> No action needed.")
+            break
+            
         env.display_status()
-        
-    print(f"Simulation ended in {steps} steps. All rooms are clean!")
+
+    if env.is_completely_clean():
+        print(f"Simulation ended successfully in {steps} steps. All rooms are clean!")
+    else:
+        print(f"Simulation stopped after reaching the maximum limit of {steps} steps.")
 
 if __name__ == "__main__":
     run_simulation()
